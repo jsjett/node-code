@@ -1,52 +1,98 @@
-const {ParametersException} = require('../core/http-exception')
 const User = require('../models/user')
 const {BaseValidator, Rule} = require('../lib/validator')
+const {LoginType} = require('../lib/enum')
 
-class CheckDemo extends BaseValidator {
+/**
+ * 注册校验
+ */
+class RegisterValidator extends BaseValidator{
+
     constructor() {
         super();
-        this.id = [
-            new Rule('isNotEmpty', "id不能为空")
+        this.email = [
+            new Rule('isEmail','邮箱格式不正确')
+        ]
+        this.password1 = [
+            new Rule('isLength','密码长度6-31位',{min:6,max:32}),
+            new Rule(
+                'matches',
+                '密码不符合规范',
+                '^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]'
+            )
+        ]
+        this.password2 = this.password1;
+        this.nickname = [
+            new Rule("isLength",'昵称长度4-32位',{min: 4,max: 32})
         ]
     }
-}
 
-class RegisterValidator {
-
-    constructor(data = {}) {
-        this.errors = [];
-        this.data = data;
+    // 自定义检测密码
+    validatePassword(ctx){
+        const {password1,password2} = ctx.body;
+        if(password1 !== password2){
+            throw new Error("两次输入密码不一致")
+        }
     }
 
-    async validate() {
-        const {nickname, email, password1, password2} = this.data;
-        !nickname && this.errors.push("昵称不能为空")
-        !email && this.errors.push("邮箱")
-        !password1 && this.errors.push("密码不能为空")
-        !(password1 === password2) && this.errors.push("两次密码输入不一致")
-        const user = await User.findOne({
-            where: {
-                email: email
+    // 检测邮箱是否存在
+    async validateEmailExits(ctx) {
+
+        const {email} = ctx.body;
+
+        const useData = await User.findOne({
+            where:{
+                email
             }
         })
-        if (user) {
-            this.errors.push("邮箱已经存在")
+
+        if(useData){
+            throw new Error("此邮箱已经存在")
         }
-        if (this.errors.length === 0) {
-            return {
-                nickname,
-                email,
-                password: password1
-            };
-        } else {
-            throw new ParametersException({msg: this.errors})
+    }
+}
+
+/**
+ * token校验
+ */
+
+class TokenValidator extends BaseValidator{
+
+    constructor() {
+        super();
+        this.account = [
+            new Rule('isLength', '账号不符合规则', {
+                min:4,
+                max:32
+            })
+        ]
+
+        this.secret = [
+            new Rule('isOptional'),
+            new Rule('isLength','密码至少6个字符',{
+                min:6,
+                max:128
+            })
+        ]
+    }
+
+    // 校验登录类型
+    validateLoginType(ctx) {
+
+        const {type} = ctx.body;
+
+        if(!type){
+            throw new Error("请传入type类型")
         }
+
+        if(!LoginType.isThisType(type)){
+            throw new Error("传入的type不合法")
+        }
+        
     }
 
 }
-
 
 module.exports = {
     RegisterValidator,
-    CheckDemo
+    TokenValidator
 }

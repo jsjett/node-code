@@ -1,4 +1,5 @@
-const {SuccessException} = require('../core/http-exception');
+const {SuccessException} = require('../core/http-exception')
+const jwt = require('jsonwebtoken')
 
 const successCallback = (msg) => {
     throw new SuccessException({msg});
@@ -27,9 +28,23 @@ function getAllFieldNames(obj, option = {}) {
     return prefixAndFilter(keys, option);
 }
 
+/**
+ * 
+ * @param {用户id} uid 
+ * @param {权限参数} scope 
+ */
+function generateToken (uid,scope) {
+    const {secretKey,expiresIn} = global.config.security;
+    const token = jwt.sign({
+        uid,
+        scope
+    },secretKey,{expiresIn})
+    return token;
+}
 
 module.exports = {
     successCallback,
     getAllMethodNames,
-    getAllFieldNames
+    getAllFieldNames,
+    generateToken
 }

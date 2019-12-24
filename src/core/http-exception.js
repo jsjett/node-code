@@ -28,16 +28,46 @@ class ParametersException extends HttpException {
 }
 
 class SuccessException extends HttpException {
-    constructor({msg='ok'} = {}) {
+    constructor({msg='ok',errorCode = 0} = {}) {
         super();
         this.msg = msg;
-        this.errorCode = 0;
+        this.errorCode = errorCode;
         this.status = 201;
+    }
+}
+
+class NoFoundException extends HttpException {
+    constructor({msg='资源不存在',errorCode=10004} = {}){
+        super();
+        this.msg = msg;
+        this.errorCode = errorCode;
+        this.status = 404;
+    }
+}
+ 
+class AuthException extends HttpException{
+    constructor({msg='权限不足',errorCode=10005} = {}){
+        super();
+        this.msg = msg;
+        this.errorCode = errorCode;
+        this.status = 401;
+    }
+}
+
+class Forbbiden extends HttpException{
+    constructor({msg = '禁止访问',errorCode = 10006} = {}){
+        super();
+        this.msg = msg;
+        this.errorCode = errorCode;
+        this.status = 403;
     }
 }
 
 module.exports = {
     HttpException,
     ParametersException,
-    SuccessException
+    SuccessException,
+    NoFoundException,
+    AuthException,
+    Forbbiden
 }

@@ -1,4 +1,4 @@
-const {get, isArray, unset, cloneDeep} = require('lodash');
+const {get, isArray, unset, cloneDeep,concat} = require('lodash');
 const validator1 = require('validator');
 const {getAllMethodNames, getAllFieldNames} = require('./helper');
 const {extendedValidator} = require('./extended-validator');
@@ -47,15 +47,8 @@ class BaseValidator {
             default: {}
         };
         if (!(await this.checkRules())) {
-            let obj = {};
-            if (this.errors.length === 1) {
-                obj = this.errors[0].message;
-            } else {
-                for (const err of this.errors) {
-                    obj[err.key] = err.message;
-                }
-            }
-            throw new ParametersException({msg: obj});
+            const errs = this.errors.map(err => err.message);
+            throw new ParametersException({msg: concat(...errs)});
         } else {
             ctx.v = this;
             return this;
@@ -206,20 +199,21 @@ class BaseValidator {
             // 第一个参数为data
             // 自定义校验函数，第一个参数是校验是否成功，第二个参数为错误信息
             try {
-                const validRes = await customerValidateFunc.call(this, this.data);
-                if (isArray(validRes) && !validRes[0]) {
-                    let key;
-                    if (validRes[2]) {
-                        key = validRes[2];
-                    } else {
-                        key = this.getValidateFuncKey(validateFuncKey);
-                    }
-                    this.errors.push({key, message: validRes[1]});
-                } else if (!validRes) {
-                    let key = this.getValidateFuncKey(validateFuncKey);
-                    // 如果自定函数没有给出错误信息，那么错误信息为默认
-                    this.errors.push({key, message: '参数错误'});
-                }
+                await customerValidateFunc.call(this, this.data);
+                // console.log('--->',validRes)
+                // if (isArray(validRes) && !validRes[0]) {
+                //     let key;
+                //     if (validRes[2]) {
+                //         key = validRes[2];
+                //     } else {
+                //         key = this.getValidateFuncKey(validateFuncKey);
+                //     }
+                //     this.errors.push({key, message: validRes[1]});
+                // } else if (!validRes) {
+                //     let key = this.getValidateFuncKey(validateFuncKey);
+                //     // 如果自定函数没有给出错误信息，那么错误信息为默认
+                //     this.errors.push({key, message: '参数错误'});
+                // }
             } catch (error) {
                 const key = this.getValidateFuncKey(validateFuncKey);
                 if (error instanceof HttpException) {
